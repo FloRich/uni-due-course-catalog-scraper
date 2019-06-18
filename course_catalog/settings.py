@@ -14,12 +14,12 @@ BOT_NAME = 'course_catalog'
 SPIDER_MODULES = ['course_catalog.spiders']
 NEWSPIDER_MODULE = 'course_catalog.spiders'
 
-
+FEED_EXPORT_ENCODING = 'utf-8'
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'course_catalog (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -64,9 +64,9 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'course_catalog.pipelines.CourseCatalogPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'course_catalog.pipelines.CourseCatalogPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
