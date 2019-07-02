@@ -1,6 +1,7 @@
 import json
 import io
 import logging
+from process_studyprogram import merge_studyprograms
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -21,7 +22,6 @@ def add_wahl_or_pflicht_to_subjects(category):
 
     # Pflichtfächer, 38
     # Pflichtmodul, 20
-    #todo: what is with wahlpflicht?
     if 'subjects' in category:
         words_in_name = category['name'].split(" ")
         first_word = str(words_in_name[0]).lower()
@@ -33,7 +33,7 @@ def add_wahl_or_pflicht_to_subjects(category):
 
 def find_studyprogram_of_category_ids(category_ids, category_dict):
     '''
-    For every category it travers up to their studyprogram and returns a list of studyprograms from all categories
+    For every category it finds their studyprogram and returns a list of studyprograms from all the categories
     :param category_ids:
     :param category_dict:
     :return:
@@ -42,6 +42,7 @@ def find_studyprogram_of_category_ids(category_ids, category_dict):
     for id in category_ids:
         category = category_dict[id]
         parent_id = category['parent_id']
+        # travers up to the studyprogram
         while parent_id is not None:
             category = category_dict[parent_id]
             parent_id = category['parent_id']
@@ -51,7 +52,7 @@ def find_studyprogram_of_category_ids(category_ids, category_dict):
     return list(study_programs)
 
 
-def fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_dict):
+def fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_by_id_dict):
     '''
     Divide between categories and subjects and put them into different dictionaries.
     :param data:
@@ -70,9 +71,12 @@ def fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_dict):
                 subjects_dict[entry['id']].append(entry)
 
         else:
-            categories_dict[entry['id']] = entry
+            categories_by_id_dict[entry['id']] = entry
+
+    convert_multiple_subject_instances_into_one(subjects_dict, categories_dict)
 
     logging.debug("dictionaries filled")
+
 
 def convert_multiple_subject_instances_into_one(subjects_dict, categories_dict):
     # merge multiple instance of a subject into one and add all studyprograms to it in which each subject was found
@@ -114,23 +118,27 @@ def add_stats_about_subject_types_to_studyprogram(studyprogram):
     studyprogram['stats'] = subject_types_dict
 
 
-def populate_category(category, subjects_dict, categories_dict):
-    # populate categories
-    categories = category['categories']
-    populated_categories = []
-    for category_id in categories:
-        populated_categories.append(categories_dict[category_id])
+def populate_categories(subjects_dict, categories_dict):
 
-    category['categories'] = populated_categories
+    for id in categories_dict:
+        category = categories_dict[id]
 
-    # populate subjects
-    if 'subjects' in category:
-        subjects = category['subjects']
-        populated_subjects = []
-        for subject_id in subjects:
-            populated_subjects.append(subjects_dict[subject_id])
+        # populate categories
+        categories = category['categories']
+        populated_categories = []
+        for category_id in categories:
+            populated_categories.append(categories_dict[category_id])
 
-        category['subjects'] = populated_subjects
+        category['categories'] = populated_categories
+
+        # populate subjects
+        if 'subjects' in category:
+            subjects = category['subjects']
+            populated_subjects = []
+            for subject_id in subjects:
+                populated_subjects.append(subjects_dict[subject_id])
+
+            category['subjects'] = populated_subjects
 
 
 #start processing
@@ -140,29 +148,38 @@ with io.open(INPUT_FILE, encoding='utf8') as json_file:
     categories_dict = {}
 
     fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_dict)
-    convert_multiple_subject_instances_into_one(subjects_dict, categories_dict)
+    populate_categories(subjects_dict, categories_dict)
 
+    programs = dict()
 
-    programs = []
     for id in categories_dict:
         entry = categories_dict[id]
 
-        populate_category(entry, subjects_dict, categories_dict)
-
-        #if it is a studyprogram, add it to the list
+        #If it is a studyprogram, add it to the dict.
+        #If a studyprogram already exists then merge them together
         if entry['parent_id'] is None:
-            programs.append(entry)
+            if entry['name'] in programs:
+                program = programs[entry['name']]
+                program = merge_studyprograms(program, entry)
+            else:
+                program = entry
+
+            programs[program['name']] = program
         else:
-            #if entry is not a subject, then check if it is of type pflicht or wahl
+            #If entry is not a subject, then check if it is of type pflicht or wahl
             if not 'subject_type' in entry:
                 add_wahl_or_pflicht_to_subjects(entry)
 
-    #collecting stats for studyprogram
-    for studyprogram in programs:
+
+    # finalize all studyprograms
+    final_programs = []
+    for studyprogram in programs.values():
+        # collecting stats for studyprogram
         add_stats_about_subject_types_to_studyprogram(studyprogram)
+        final_programs.append(studyprogram)
 
     with io.open(OUTPUT_FILE, 'w', encoding='utf8') as output_file:
-        json.dump(programs,output_file, ensure_ascii=False)
+        json.dump(final_programs,output_file, ensure_ascii=False)
         output_file.close()
 
     json_file.close()
