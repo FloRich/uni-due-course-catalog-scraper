@@ -107,7 +107,7 @@ def merge_subjects(first_subject, second_subject):
     else:
         merged_subject = create_new_subject(second_subject)
 
-    merged_subject['semsters'] = [first_subject['semester'], second_subject['semester']]
+    merged_subject['semesters'] = [first_subject['semester'], second_subject['semester']]
     merged_subject['ids'] = [first_subject['id'], second_subject['id']]
     merged_subject['parent_ids'] = [first_subject['parent_id'], second_subject['parent_id']]
 
@@ -122,7 +122,7 @@ def create_new_subject(old_subject):
     '''
     new_subject = dict()
 
-    attribute_list = ['url','subject_type', 'shorttext', 'longtext', 'sws', 'persons','timetable','language','hyperlink','studyprograms']
+    attribute_list = ['name','url','subject_type', 'shorttext', 'longtext', 'sws', 'persons','timetable','language','hyperlink','studyprograms']
     for attribute in attribute_list:
         new_subject[attribute] = old_subject[attribute]
 

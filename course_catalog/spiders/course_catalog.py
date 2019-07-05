@@ -68,7 +68,6 @@ class CourseCatalogSpider(scrapy.Spider):
 
     def extract_studyprogram_content(self, response):
 
-        #todo: extract courses
         studyprogram = response.meta['parent']
         number_of_layers = studyprogram['url'].count('|')
         links = response.xpath('//a')
@@ -165,10 +164,13 @@ class CourseCatalogSpider(scrapy.Spider):
         entries = []
         table_xpath = "//table[@summary=\""+ self.table_summary_for_time+"\"]"
         tables = response.xpath(table_xpath)
+        print(tables.extract())
         for table in tables:
-            number_entries = int(float(table.xpath("count(/*/tr)").get()) - 1)
+            number_entries = int(float(table.xpath("count(tr)").get())-1)
+            print(table)
+            print(number_entries)
             for index in range(2, 2+number_entries):
-                entry_element_str = "/*/tr["+str(index) + "]"
+                entry_element_str = "tr["+str(index) + "]"
                 day = self.clear_string(table.xpath(entry_element_str+"/td[2]/text()").get())
                 time = self.clear_string(table.xpath(entry_element_str+"/td[3]/text()").get())
                 rhythm = self.clear_string(table.xpath(entry_element_str+"/td[4]/text()").get())
@@ -184,7 +186,7 @@ class CourseCatalogSpider(scrapy.Spider):
                                          status = status,
                                          comment = comment)
                                )
-            return entries
+        return entries
 
     def extract_persons(self, response):
         '''
@@ -198,7 +200,7 @@ class CourseCatalogSpider(scrapy.Spider):
 
         for index in range(2,2+number_persons):
             self.log(str(index))
-            person = response.xpath(table_xpath+"/*/tr["+str(index)+"]/td/a")
+            person = response.xpath(table_xpath+"/tr["+str(index)+"]/td/a")
             name = self.clear_string(person.css("::text").get())
             url = person.attrib['href']
             persons.append(Person(name=name, url=url))
