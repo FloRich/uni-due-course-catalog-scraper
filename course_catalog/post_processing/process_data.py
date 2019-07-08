@@ -1,7 +1,7 @@
 import json
 import io
 import logging
-from process_studyprogram import merge_studyprograms
+from process_studyprogram import merge_studyprograms, process_timetable_of_subject
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -64,6 +64,7 @@ def fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_by_id_
         # handle subject differently, because they exists multiple times
 
         if 'subject_type' in entry:
+            process_timetable_of_subject(entry)
             if not entry['id'] in subjects_dict:
                 # search for all entries of this subject
                 subjects_dict[entry['id']] = [entry]

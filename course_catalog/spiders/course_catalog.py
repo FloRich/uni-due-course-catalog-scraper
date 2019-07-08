@@ -164,11 +164,8 @@ class CourseCatalogSpider(scrapy.Spider):
         entries = []
         table_xpath = "//table[@summary=\""+ self.table_summary_for_time+"\"]"
         tables = response.xpath(table_xpath)
-        print(tables.extract())
         for table in tables:
             number_entries = int(float(table.xpath("count(tr)").get())-1)
-            print(table)
-            print(number_entries)
             for index in range(2, 2+number_entries):
                 entry_element_str = "tr["+str(index) + "]"
                 day = self.clear_string(table.xpath(entry_element_str+"/td[2]/text()").get())
@@ -196,10 +193,9 @@ class CourseCatalogSpider(scrapy.Spider):
         '''
         persons = []
         table_xpath = "//table[@summary=\""+ self.table_summary_for_persons + "\"]"
-        number_persons = int(float(response.xpath("count("+table_xpath+"/*/tr)").get()) - 1)
+        number_persons = int(float(response.xpath("count("+table_xpath+"/tr)").get()) - 1)
 
         for index in range(2,2+number_persons):
-            self.log(str(index))
             person = response.xpath(table_xpath+"/tr["+str(index)+"]/td/a")
             name = self.clear_string(person.css("::text").get())
             url = person.attrib['href']

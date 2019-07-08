@@ -1,3 +1,6 @@
+import datetime
+import time
+
 CURRENT_SEMESTER = "SoSe 2019"
 
 
@@ -127,6 +130,33 @@ def create_new_subject(old_subject):
         new_subject[attribute] = old_subject[attribute]
 
     return new_subject
+
+
+def process_timetable_of_subject(subject):
+
+    processed_timetable = []
+    for entry in subject['timetable']:
+        times = entry['time'].split('\xa0bis\xa0')
+        if len(times) == 2:
+            time = {
+                'from': times[0].replace('\xa0',''),
+                'to': times[1].replace('\xa0',''),
+            }
+            entry['time'] = time
+
+        durations = entry['duration'].split('\xa0bis\xa0')
+        if len(durations) == 2:
+            duration = {
+                'from': durations[0].replace('\xa0',''),
+                'to': durations[1].replace('\xa0','')
+            }
+            entry['duration'] = duration
+
+        processed_timetable.append(entry)
+
+    subject['timetable'] = processed_timetable
+    print("Processed subject: "+str(subject))
+    return subject
 
 
 def merge_studyprograms(first_studyprogram, second_studyprogram):
