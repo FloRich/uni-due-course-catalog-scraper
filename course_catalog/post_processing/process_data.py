@@ -1,7 +1,7 @@
 import json
 import io
 import logging
-from process_studyprogram import merge_studyprograms, process_timetable_of_subject
+import process_studyprogram as ps
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -11,17 +11,6 @@ OUTPUT_FILE = "../data/post_processed_studyprograms.json"
 
 def add_wahl_or_pflicht_to_subjects(category):
     # possible first words
-    # Wahlpflichtveranstaltungen
-    # Wahlkatalog
-    # Wahlpflichtmodule
-    # Wahlveranstaltungen, 13
-    # Wahlpflichtmodul, 16
-    # Wahlpflichtkatalog, 18
-    # Modul, 20
-    # Wahlplfichtbereich, 252
-
-    # Pflichtfächer, 38
-    # Pflichtmodul, 20
     if 'subjects' in category:
         words_in_name = category['name'].split(" ")
         first_word = str(words_in_name[0]).lower()
@@ -64,7 +53,7 @@ def fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_by_id_
         # handle subject differently, because they exists multiple times
 
         if 'subject_type' in entry:
-            process_timetable_of_subject(entry)
+            ps.process_timetable_of_subject(entry)
             if not entry['id'] in subjects_dict:
                 # search for all entries of this subject
                 subjects_dict[entry['id']] = [entry]
@@ -74,13 +63,13 @@ def fill_dict_for_subjects_and_catagories(data, subjects_dict, categories_by_id_
         else:
             categories_by_id_dict[entry['id']] = entry
 
-    convert_multiple_subject_instances_into_one(subjects_dict, categories_dict)
+    merge_parents_and_studyprograms_of_same_subjects(subjects_dict, categories_dict)
 
     logging.debug("dictionaries filled")
 
 
-def convert_multiple_subject_instances_into_one(subjects_dict, categories_dict):
-    # merge multiple instance of a subject into one and add all studyprograms to it in which each subject was found
+def merge_parents_and_studyprograms_of_same_subjects(subjects_dict, categories_dict):
+    # add studyprograms and ids of parents of multiple subjects into one
     for id in subjects_dict:
         list_of_subject = subjects_dict[id]
         parent_ids = []
@@ -91,6 +80,7 @@ def convert_multiple_subject_instances_into_one(subjects_dict, categories_dict):
         studyprograms = find_studyprogram_of_category_ids(parent_ids, categories_dict)
         choosen_subject['parent_ids'] = parent_ids
         choosen_subject['studyprograms'] = studyprograms
+        #choosen_subject = ps.create_new_subject(choosen_subject)
         subjects_dict[choosen_subject['id']] = choosen_subject
 
 
@@ -161,13 +151,13 @@ with io.open(INPUT_FILE, encoding='utf8') as json_file:
         if entry['parent_id'] is None:
             if entry['name'] in programs:
                 program = programs[entry['name']]
-                program = merge_studyprograms(program, entry)
+                program = ps.merge_studyprograms(program, entry)
             else:
-                program = entry
+                program = ps.transform_categories_and_subjects_of_studyprogram(entry)
 
             programs[program['name']] = program
         else:
-            #If entry is not a subject, then check if it is of type pflicht or wahl
+            #If it is not a studyprogram and no subject, check if it is of type pflicht or wahl
             if not 'subject_type' in entry:
                 add_wahl_or_pflicht_to_subjects(entry)
 
